@@ -48,14 +48,13 @@ class PlaySemantle(discord.Client):
                 self.guesses[self.word] = await self.result(self.word)
                 self.guesses[self.word]["similarity"] = 100.0
 
-            else:
-                guess = message.content.split(" ")[1]
-                try:
-                    await self.do_guess(message, guess)
-                except ValueError:
-                    await message.channel.send(f"{guess} is invalid")
-                except json.decoder.JSONDecodeError:
-                    await message.channel.send(f"{guess} is invalid")
+            guess = message.content.split(" ")[1]
+            try:
+                await self.do_guess(message, guess)
+            except ValueError:
+                await message.channel.send(f"{guess} is invalid")
+            except json.decoder.JSONDecodeError:
+                await message.channel.send(f"{guess} is invalid")
 
         elif message.content.startswith("!top"):
             n = 10
