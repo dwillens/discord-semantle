@@ -9,6 +9,7 @@ import random
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class PlaySemantle(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,7 +26,7 @@ class PlaySemantle(discord.Client):
         self.word = self.words[random.randrange(len(self.words))]
         self.guesses = dict()
         self.top = dict()
-        logger.debug(f'{self.word}')
+        logger.debug(f"{self.word}")
 
     async def on_ready(self):
         logger.info(f"We have logged in as {self.user}")
@@ -92,9 +93,9 @@ class PlaySemantle(discord.Client):
         else:
             percentile = "cold"
 
-        similarity = round(g['similarity'], 3)
-        by = str(g['by'])
-        return f'{guess:16} {percentile:10} {similarity:6} {by:>20}'
+        similarity = round(g["similarity"], 3)
+        by = str(g["by"])
+        return f"{guess:16} {percentile:10} {similarity:6} {by:>20}"
 
     async def result(self, guess):
         async with aiohttp.ClientSession() as session:
@@ -106,9 +107,10 @@ class PlaySemantle(discord.Client):
                 result["array"] = np.array(result["vec"])
                 return result
 
-parser = argparse.ArgumentParser(description='Semantle bot')
-parser.add_argument('-d', '--debug', action='store_true')
-parser.add_argument('-t', '--token')
+
+parser = argparse.ArgumentParser(description="Semantle bot")
+parser.add_argument("-d", "--debug", action="store_true")
+parser.add_argument("-t", "--token")
 
 args = parser.parse_args()
 
