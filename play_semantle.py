@@ -51,7 +51,6 @@ class PlaySemantle(discord.Client):
 
                 if not guess in self.guesses:
                     self.guesses[guess] = await self.result(guess)
-                    self.guesses[guess]["by"] = message.author
 
                     wa = self.guesses[self.word]["array"]
                     ga = self.guesses[guess]["array"]
@@ -61,13 +60,16 @@ class PlaySemantle(discord.Client):
                     self.guesses[guess]["similarity"] = sim
                     self.top[sim] = guess
 
+                if not 'by' in self.guesses[guess]:
+                    self.guesses[guess]["by"] = message.author
+
                 await message.channel.send(self.format_guess(guess))
 
                 if self.word == guess:
                     self.top[100.0] = guess
                     g = self.guesses[guess]
                     await message.channel.send(
-                        f'{g["by"]} got the correct word {self.word}'
+                            f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
                     )
 
         elif message.content.startswith("!top"):
