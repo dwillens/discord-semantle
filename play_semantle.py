@@ -1,9 +1,13 @@
 import aiohttp
+import argparse
 import discord
 import json
+import logging
 import numpy as np
 import random
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class PlaySemantle(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -21,9 +25,10 @@ class PlaySemantle(discord.Client):
         self.word = self.words[random.randrange(len(self.words))]
         self.guesses = dict()
         self.top = dict()
+        logger.debug(f'{self.word}')
 
     async def on_ready(self):
-        print(f"We have logged in as {self.user}")
+        logger.info(f"We have logged in as {self.user}")
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -95,7 +100,15 @@ class PlaySemantle(discord.Client):
                 result["array"] = np.array(result["vec"])
                 return result
 
+parser = argparse.ArgumentParser(description='Semantle bot')
+parser.add_argument('-d', '--debug', action='store_true')
+parser.add_argument('-t', '--token')
+
+args = parser.parse_args()
+
+if args.debug:
+    logger.setLevel(logging.DEBUG)
 
 client = PlaySemantle(intents=discord.Intents.default())
 
-client.run(sys.argv[1])
+client.run(args.token)
