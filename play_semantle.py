@@ -33,45 +33,29 @@ class PlaySemantle(discord.Client):
 
     async def on_message(self, message):
         if message.author == self.user:
-            return
+            pass
 
-        if message.content.startswith("!new"):
-            old = self.word
+        elif not "semantle" in message.channel.name:
+            pass
+
+        elif message.content.startswith("!new"):
+            await message.channel.send(self.format_top(20))
+            await message.channel.send(f"old word was {self.word}. choosing a new word")
             self.choose_new_word()
-            await message.channel.send(f"old word was {old}. choosing a new word")
 
         elif message.content.startswith("!guess"):
-            guess = message.content.split(" ")[1]
+            if not self.word in self.guesses:
+                self.guesses[self.word] = await self.result(self.word)
+                self.guesses[self.word]["similarity"] = 100.0
 
-            if not guess in self.valid:
-                await message.channel.send(f"{guess} is invalid")
             else:
-                if not self.word in self.guesses:
-                    self.guesses[self.word] = await self.result(self.word)
-                    self.guesses[self.word]["similarity"] = 100.0
-
-                if not guess in self.guesses:
-                    self.guesses[guess] = await self.result(guess)
-
-                    wa = self.guesses[self.word]["array"]
-                    ga = self.guesses[guess]["array"]
-                    sim = (
-                        100 * np.dot(wa, ga) / (np.linalg.norm(wa) * np.linalg.norm(ga))
-                    )
-                    self.guesses[guess]["similarity"] = sim
-                    self.top[sim] = guess
-
-                if not 'by' in self.guesses[guess]:
-                    self.guesses[guess]["by"] = message.author
-
-                await message.channel.send(f'```{self.format_guess(guess)}```')
-
-                if self.word == guess:
-                    self.top[100.0] = guess
-                    g = self.guesses[guess]
-                    await message.channel.send(
-                            f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
-                    )
+                guess = message.content.split(" ")[1]
+                try:
+                    await self.do_guess(message, guess)
+                except ValueError:
+                    await message.channel.send(f"{guess} is invalid")
+                except json.decoder.JSONDecodeError:
+                    await message.channel.send(f"{guess} is invalid")
 
         elif message.content.startswith("!top"):
             n = 10
@@ -80,11 +64,40 @@ class PlaySemantle(discord.Client):
             except:
                 pass
 
-            lines = [self.format_guess(guess)
-                    for (_, guess)
-                    in reversed(sorted(self.top.items())[-n:])]
-            text = '\n'.join(lines)
-            await message.channel.send(f'```{text}```')
+            await message.channel.send(self.format_top(n))
+
+    def format_top(self, n):
+        lines = [
+            self.format_guess(guess)
+            for (_, guess) in reversed(sorted(self.top.items())[-n:])
+        ]
+        text = "\n".join(lines)
+        return f"```{text}```"
+
+    async def do_guess(self, message, guess):
+        if not guess in self.valid:
+            raise ValueError('not in list')
+
+        if not guess in self.guesses:
+            self.guesses[guess] = await self.result(guess)
+
+            wa = self.guesses[self.word]["array"]
+            ga = self.guesses[guess]["array"]
+            sim = 100 * np.dot(wa, ga) / (np.linalg.norm(wa) * np.linalg.norm(ga))
+            self.guesses[guess]["similarity"] = sim
+            self.top[sim] = guess
+
+        if not "by" in self.guesses[guess]:
+            self.guesses[guess]["by"] = message.author
+
+        await message.channel.send(f"```{self.format_guess(guess)}```")
+
+        if self.word == guess:
+            self.top[100.0] = guess
+            g = self.guesses[guess]
+            await message.channel.send(
+                f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
+            )
 
     def format_guess(self, guess):
         g = self.guesses[guess]
