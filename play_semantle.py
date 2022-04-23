@@ -71,7 +71,7 @@ class PlaySemantle(discord.Client):
             for (_, guess) in reversed(sorted(self.top.items())[-n:])
         ]
         text = "\n".join(lines)
-        return f"```{text}```"
+        return f"```{text} ```"
 
     async def do_guess(self, message, guess):
         if not guess in self.valid:
@@ -89,7 +89,7 @@ class PlaySemantle(discord.Client):
         if not "by" in self.guesses[guess]:
             self.guesses[guess]["by"] = message.author
 
-        await message.channel.send(f"```{self.format_guess(guess)}```")
+        await message.channel.send(f"```{self.format_guess(guess)} ```")
 
         if self.word == guess:
             self.top[100.0] = guess
@@ -101,13 +101,13 @@ class PlaySemantle(discord.Client):
     def format_guess(self, guess):
         g = self.guesses[guess]
         if "percentile" in g:
-            percentile = f'{g["percentile"]}/1000'
+            percentile = f'{g["percentile"]}'
         else:
             percentile = "cold"
 
-        similarity = round(g["similarity"], 3)
-        by = str(g["by"])
-        return f"{guess:16} {percentile:10} {similarity:6} {by:>20}"
+        similarity = round(g["similarity"], 2)
+        by = str(g["by"])[:8]
+        return f"{guess:15} {percentile:>4} {similarity:6} {by:>8}"
 
     async def result(self, guess):
         async with aiohttp.ClientSession() as session:
