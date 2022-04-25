@@ -75,7 +75,7 @@ class PlaySemantle(discord.Client):
 
     async def do_guess(self, message, guess):
         if not guess in self.valid:
-            raise ValueError('not in list')
+            raise ValueError("not in list")
 
         if not guess in self.guesses:
             self.guesses[guess] = await self.result(guess)
