@@ -5,6 +5,7 @@ import json
 import logging
 import numpy as np
 import random
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 class PlaySemantle(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.filter = re.compile("[^a-zA-Z]")
 
         with open("words.txt") as f:
             self.words = [l.strip() for l in f.readlines()]
@@ -43,12 +46,17 @@ class PlaySemantle(discord.Client):
             await message.channel.send(f"old word was {self.word}. choosing a new word")
             self.choose_new_word()
 
-        elif message.content.startswith("!guess"):
+        elif message.content.startswith("!guess") or message.content.startswith("$"):
             if not self.word in self.guesses:
                 self.guesses[self.word] = await self.result(self.word)
                 self.guesses[self.word]["similarity"] = 100.0
 
-            guess = message.content.split(" ")[1]
+            strip = 7
+            if message.content.startswith("$"):
+                strip = 1
+
+            guess = self.filter.sub("", message.content[strip:])
+
             try:
                 await self.do_guess(message, guess)
             except ValueError:
