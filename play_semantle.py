@@ -46,6 +46,38 @@ class PlaySemantle(discord.Client):
             await message.channel.send(f"old word was {self.word}. choosing a new word")
             self.choose_new_word()
 
+        elif message.content.startswith("!hint"):
+            gs = [self.guesses[i] for (_, i) in reversed(sorted(self.top.items()))]
+
+            if not gs:
+                n = 1
+            elif not "percentile" in gs[0]:
+                n = 1
+            elif 999 <= gs[0]["percentile"]:
+                n = gs[0]["percentile"] - 1
+                for g in gs[1:]:
+                    if not "percentile" in g:
+                        break
+                    elif n > g["percentile"]:
+                        break
+                    else:
+                        n = g["percentile"] - 1
+            else:
+                n = int((1000 + gs[0]["percentile"]) / 2)
+
+            hint = await self.nth_nearby(n)
+
+            if not self.word in self.guesses:
+                self.guesses[self.word] = await self.result(self.word)
+                self.guesses[self.word]["similarity"] = 100.0
+
+            try:
+                await self.do_guess(message, "hint", hint)
+            except ValueError:
+                await message.channel.send("could not generate hint")
+            except json.decoder.JSONDecodeError:
+                await message.channel.send("could not generate hint")
+
         elif message.content.startswith("!guess") or message.content.startswith("$"):
             if not self.word in self.guesses:
                 self.guesses[self.word] = await self.result(self.word)
@@ -58,7 +90,7 @@ class PlaySemantle(discord.Client):
             guess = self.filter.sub("", message.content[strip:])
 
             try:
-                await self.do_guess(message, guess)
+                await self.do_guess(message, message.author, guess)
             except ValueError:
                 await message.channel.send(f"{guess} is invalid")
             except json.decoder.JSONDecodeError:
@@ -81,7 +113,7 @@ class PlaySemantle(discord.Client):
         text = "\n".join(lines)
         return f"```{text} ```"
 
-    async def do_guess(self, message, guess):
+    async def do_guess(self, message, author, guess):
         if not guess in self.valid:
             raise ValueError("not in list")
 
@@ -95,7 +127,7 @@ class PlaySemantle(discord.Client):
             self.top[sim] = guess
 
         if not "by" in self.guesses[guess]:
-            self.guesses[guess]["by"] = message.author
+            self.guesses[guess]["by"] = author
 
         await message.channel.send(f"```{self.format_guess(guess)} ```")
 
@@ -125,6 +157,15 @@ class PlaySemantle(discord.Client):
                 text = await response.text()
                 result = json.loads(text)
                 result["array"] = np.array(result["vec"])
+                return result
+
+    async def nth_nearby(self, n):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"http://semantle.novalis.org/nth_nearby/{self.word}/{n}"
+            ) as response:
+                text = await response.text()
+                result = json.loads(text)
                 return result
 
 
