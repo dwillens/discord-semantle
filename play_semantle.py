@@ -65,8 +65,8 @@ class GameState:
     def is_win(self, guess):
         return self.word == guess
 
-    def format_win(self, guess):
-        g = self.guesses[guess]
+    def format_win(self):
+        g = self.guesses[self.word]
         return f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
 
     def format_top(self, n):
@@ -193,7 +193,7 @@ class PlaySemantle(discord.Client):
             await message.channel.send(f"```{game.format_guess(guess)} ```")
 
             if game.is_win(guess):
-                await message.channel.send(game.format_win(guess))
+                await message.channel.send(game.format_win())
 
         except json.decoder.JSONDecodeError:
             await message.channel.send(f"{guess} is invalid")
