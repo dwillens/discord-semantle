@@ -78,6 +78,8 @@ class GameState:
         g = self.guesses[guess]
         if "percentile" in g:
             percentile = f'{g["percentile"]}'
+        elif g["similarity"] >= self.story["rest"]:
+            percentile = "????"
         else:
             percentile = "cold"
 
