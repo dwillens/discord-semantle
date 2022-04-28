@@ -174,9 +174,13 @@ class PlaySemantle(discord.Client):
             if not game.is_guessed(guess):
                 result = await self.result(game.word, guess)
 
+            game = self.games[str(message.channel.id)]
+
+            if not game.is_guessed(guess):
                 game.add_guess(guess, result)
 
             game.maybe_add_author(guess, author)
+
             self.games[str(message.channel.id)] = game
             self.games.sync()
 
