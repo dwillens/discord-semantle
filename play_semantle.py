@@ -103,6 +103,10 @@ class PlaySemantle(discord.Client):
 
         self.games = shelve.open("play_semantle")
 
+    async def close(self):
+        self.games.close()
+        await super().close()
+
     async def on_ready(self):
         logger.info(f"We have logged in as {self.user}")
 
