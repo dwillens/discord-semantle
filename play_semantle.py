@@ -13,22 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class GameState:
-    def __init__(self, word, *args, **kwargs):
+    def __init__(self, word, result, story, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.word = word
-        self.guesses = dict()
 
-    def add_word(self, result):
-        self.guesses[self.word] = result
-        self.guesses[self.word]["similarity"] = 100.0
+        result["similarity"] = 1.0
+        self.guesses = {word: result}
+
+        self.story = story
 
     def add_guess(self, guess, result):
         self.guesses[guess] = result
 
-        wa = self.guesses[self.word]["array"]
-        ga = self.guesses[guess]["array"]
-        self.guesses[guess]["similarity"] = (
-            100 * np.dot(wa, ga) / (np.linalg.norm(wa) * np.linalg.norm(ga))
+        wa = self.guesses[self.word]["vec"]
+        ga = self.guesses[guess]["vec"]
+        self.guesses[guess]["similarity"] = np.dot(wa, ga) / (
+            np.linalg.norm(wa) * np.linalg.norm(ga)
         )
 
     def maybe_add_author(self, guess, author):
@@ -81,7 +81,11 @@ class GameState:
         else:
             percentile = "cold"
 
-        similarity = round(g["similarity"], 2)
+        s = g["similarity"] - self.story["rest"]
+        s = s * 0.7 / (self.story["top"] - self.story["rest"])
+        s = s + 0.2
+
+        similarity = round(100 * s, 2)
         by = str(g["by"])[:8]
         return f"{guess:15} {percentile:>4} {similarity:6} {by:>8}"
 
@@ -110,12 +114,11 @@ class PlaySemantle(discord.Client):
         else:
             if not str(message.channel.id) in self.games:
                 word = self.words[random.randrange(len(self.words))]
-                game = GameState(word)
 
-                result = await self.result(game, word)
-                game.add_word(result)
+                result = await self.result(word, word)
+                story = await self.story(word)
 
-                self.games[str(message.channel.id)] = game
+                self.games[str(message.channel.id)] = GameState(word, result, story)
                 self.games.sync()
 
                 logger.debug(
@@ -155,9 +158,9 @@ class PlaySemantle(discord.Client):
 
     async def process_hint(self, message):
         game = self.games[str(message.channel.id)]
-        n = game.hint()
 
-        hint = await self.nth_nearby(game, n)
+        n = game.hint()
+        hint = await self.nth_nearby(game.word, n)
 
         await self.process_guess(message, "hint", hint)
 
@@ -169,7 +172,7 @@ class PlaySemantle(discord.Client):
         game = self.games[str(message.channel.id)]
         try:
             if not game.is_guessed(guess):
-                result = await self.result(game, guess)
+                result = await self.result(game.word, guess)
 
                 game.add_guess(guess, result)
 
@@ -185,21 +188,29 @@ class PlaySemantle(discord.Client):
         except json.decoder.JSONDecodeError:
             await message.channel.send(f"{guess} is invalid")
 
-
-    async def result(self, game, guess):
+    async def story(self, word):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://semantle.novalis.org/model2/{game.word}/{guess}"
+                f"http://semantle.novalis.org/similarity/{word}"
             ) as response:
                 text = await response.text()
                 result = json.loads(text)
-                result["array"] = np.array(result["vec"])
                 return result
 
-    async def nth_nearby(self, game, n):
+    async def result(self, word, guess):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://semantle.novalis.org/nth_nearby/{game.word}/{n}"
+                f"http://semantle.novalis.org/model2/{word}/{guess}"
+            ) as response:
+                text = await response.text()
+                result = json.loads(text)
+                result["vec"] = np.array(result["vec"])
+                return result
+
+    async def nth_nearby(self, word, n):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"http://semantle.novalis.org/nth_nearby/{word}/{n}"
             ) as response:
                 text = await response.text()
                 result = json.loads(text)
