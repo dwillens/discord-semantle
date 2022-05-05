@@ -11,7 +11,7 @@ https://discord.com/api/oauth2/authorize?client_id=966183123400400946&permission
 
 - each channel has a separate game state
 
-## differences from http://semantle.novalis.org
+## differences from http://semantle.com
 - guess similarity is scaled s.t. the 1000th closest word has similarity 20.0 and the closest word has similarity 90.0
 
 ## commands
