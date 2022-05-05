@@ -214,7 +214,7 @@ class PlaySemantle(discord.Client):
     async def story(self, word):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://semantle.novalis.org/similarity/{word}"
+                f"http://semantle.com/similarity/{word}"
             ) as response:
                 text = await response.text()
                 result = json.loads(text)
@@ -223,7 +223,7 @@ class PlaySemantle(discord.Client):
     async def result(self, word, guess):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://semantle.novalis.org/model2/{word}/{guess}"
+                f"http://semantle.com/model2/{word}/{guess}"
             ) as response:
                 text = await response.text()
                 result = json.loads(text)
@@ -233,7 +233,7 @@ class PlaySemantle(discord.Client):
     async def nth_nearby(self, word, n):
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"http://semantle.novalis.org/nth_nearby/{word}/{n}"
+                f"http://semantle.com/nth_nearby/{word}/{n}"
             ) as response:
                 text = await response.text()
                 result = json.loads(text)
