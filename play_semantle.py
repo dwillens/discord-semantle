@@ -75,21 +75,34 @@ class GameState:
         return f"```{text} ```"
 
     def format_guess(self, guess):
+        def circle(percentile):
+            if percentile > 990:
+                return "\N{large red circle}"
+            elif percentile > 900:
+                return "\N{large orange circle}"
+            elif percentile > 750:
+                return "\N{large yellow circle}"
+            elif percentile > 500:
+                return "\N{large green circle}"
+            else:
+                return "\N{large blue circle}"
+
         g = self.guesses[guess]
         if "percentile" in g:
-            percentile = f'{g["percentile"]}'
+            p = g["percentile"]
+            percentile = f'{p}{circle(int(p))}'
         elif g["similarity"] >= self.story["rest"]:
-            percentile = "????"
+            percentile = "????\N{black question mark ornament}"
         else:
-            percentile = "cold"
+            percentile = "cold\N{snowflake}"
 
         s = g["similarity"] - self.story["rest"]
         s = s * 0.7 / (self.story["top"] - self.story["rest"])
         s = s + 0.2
 
         similarity = round(100 * s, 2)
-        by = str(g["by"])[:8]
-        return f"{guess:15} {percentile:>4} {similarity:6} {by:>8}"
+        by = str(g["by"])[:6]
+        return f"{guess:15} {percentile:>5} {similarity:6} {by:>6}"
 
 
 class PlaySemantle(discord.Client):
