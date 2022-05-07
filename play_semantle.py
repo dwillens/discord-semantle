@@ -132,7 +132,7 @@ class PlaySemantle(discord.Client):
 
         else:
             if not str(message.channel.id) in self.games:
-                word = self.words[random.randrange(len(self.words))]
+                word = random.choice(self.words)
 
                 result = await self.result(word, word)
                 story = await self.story(word)
