@@ -107,7 +107,7 @@ class GameState:
 
 
 class PlaySemantle(discord.Client):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, channel, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.filter = re.compile("[^a-zA-Z]")
@@ -116,6 +116,7 @@ class PlaySemantle(discord.Client):
             self.words = json.loads(f.read())
 
         self.games = shelve.open("play_semantle")
+        self.channel = channel
 
     async def close(self):
         self.games.close()
@@ -128,7 +129,7 @@ class PlaySemantle(discord.Client):
         if message.author == self.user:
             pass
 
-        elif not "semantle" in message.channel.name:
+        elif not self.channel in message.channel.name:
             pass
 
         else:
@@ -244,12 +245,13 @@ class PlaySemantle(discord.Client):
 parser = argparse.ArgumentParser(description="Semantle bot")
 parser.add_argument("-d", "--debug", action="store_true")
 parser.add_argument("-t", "--token")
+parser.add_argument("-c", "--channel", default="semantle")
 
 args = parser.parse_args()
 
 if args.debug:
     logger.setLevel(logging.DEBUG)
 
-client = PlaySemantle(intents=discord.Intents.default())
+client = PlaySemantle(args.channel, intents=discord.Intents.default())
 
 client.run(args.token)
