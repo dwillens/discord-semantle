@@ -1,12 +1,14 @@
 import aiohttp
 import argparse
 import discord
+import itertools
 import json
 import logging
 import numpy as np
 import random
 import re
 import shelve
+import statistics
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,6 +68,12 @@ class GameState:
     def is_win(self, guess):
         return self.word == guess
 
+    def scaled_similarity(self, similarity):
+        s = similarity - self.story["rest"]
+        s = s * 0.7 / (self.story["top"] - self.story["rest"])
+        s = s + 0.2
+        return 100 * s
+
     def format_win(self):
         g = self.guesses[self.word]
         return f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
@@ -74,6 +82,34 @@ class GameState:
         lines = [self.format_guess(guess) for guess in self.top()[:n]]
         text = "\n".join(lines)
         return f"```{text} ```"
+
+    def format_stats(self):
+        authors = {}
+        hints = 0
+
+        first = lambda t: t[0]
+        by_author = sorted([(v["by"], v) for v in self.guesses.values()], key=first)
+        for author, guesses in itertools.groupby(by_author, key=first):
+            if "hint" == author:
+                hints = len([g for g in guesses])
+            else:
+                sims = [g[1]["similarity"] for g in guesses]
+                authors[author] = {
+                    "n": len(sims),
+                    "max": self.scaled_similarity(max(sims)),
+                    "median": self.scaled_similarity(statistics.median(sims))
+                }
+
+        lines = [
+            f"{len(self.guesses) - hints} guesses, {hints} hints",
+            "",
+            f'{"who":6} {"n":>5} {"max":>6} {"median":>6}'
+        ] + [
+            f'{str(k)[:6]:6} {v["n"]:5} {round(v["max"], 2):6} {round(v["median"], 2):6}'
+            for k, v in sorted(authors.items(), key=lambda t: t[1]["max"])
+        ]
+        text = "\n".join(lines)
+        return f"```{text}```"
 
     def format_guess(self, guess):
         def circle(percentile):
@@ -89,6 +125,7 @@ class GameState:
                 return "\N{large blue circle}"
 
         g = self.guesses[guess]
+
         if "percentile" in g:
             p = g["percentile"]
             percentile = f'{p}{circle(int(p))}'
@@ -97,13 +134,11 @@ class GameState:
         else:
             percentile = "cold\N{snowflake}"
 
-        s = g["similarity"] - self.story["rest"]
-        s = s * 0.7 / (self.story["top"] - self.story["rest"])
-        s = s + 0.2
+        s = self.scaled_similarity(g["similarity"])
 
-        similarity = round(100 * s, 2)
         by = str(g["by"])[:6]
-        return f"{guess:15} {percentile:>5} {similarity:6} {by:>6}"
+
+        return f"{guess:15} {percentile:>5} {round(s, 2):6} {by:>6}"
 
 
 class PlaySemantle(discord.Client):
@@ -168,10 +203,18 @@ class PlaySemantle(discord.Client):
 
                 await self.process_top(message, n)
 
+            elif message.content.startswith("!stats"):
+                await self.process_stats(message)
+
+    async def process_stats(self, message):
+        game = self.games[str(message.channel.id)]
+        await message.channel.send(game.format_stats())
+
     async def process_new(self, message):
         game = self.games[str(message.channel.id)]
 
         await message.channel.send(game.format_top(20))
+        await message.channel.send(game.format_stats())
         await message.channel.send(f"old word was {game.word}. choosing a new word")
 
         del self.games[str(message.channel.id)]
