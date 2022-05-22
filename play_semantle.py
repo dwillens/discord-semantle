@@ -15,28 +15,29 @@ logger = logging.getLogger(__name__)
 class GameState:
     def __init__(self, word, result, story, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.word = word
-
-        result["similarity"] = 1.0
-        self.guesses = {word: result}
-
         self.story = story
+        self.guesses = {}
+        self.result = result
 
     def add_guess(self, guess, result):
-        self.guesses[guess] = result
+        wa = self.result["vec"]
+        ga = result["vec"]
 
-        wa = self.guesses[self.word]["vec"]
-        ga = self.guesses[guess]["vec"]
-        self.guesses[guess]["similarity"] = np.dot(wa, ga) / (
+        del result["vec"]
+        result["similarity"] = np.dot(wa, ga) / (
             np.linalg.norm(wa) * np.linalg.norm(ga)
         )
+
+        self.guesses[guess] = result
 
     def maybe_add_author(self, guess, author):
         if not "by" in self.guesses[guess]:
             self.guesses[guess]["by"] = author
 
     def top(self):
-        by_sim = [(v["similarity"], k) for (k, v) in self.guesses.items() if "by" in v]
+        by_sim = [(v["similarity"], k) for (k, v) in self.guesses.items()]
         return [k for (_, k) in reversed(sorted(by_sim))]
 
     def hint(self):
