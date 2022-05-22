@@ -132,7 +132,7 @@ class GameState:
         elif g["similarity"] >= self.story["rest"]:
             percentile = "????\N{black question mark ornament}"
         else:
-            percentile = "cold\N{snowflake}"
+            percentile = "cold\N{snowman without snow}"
 
         s = self.scaled_similarity(g["similarity"])
 
