@@ -76,7 +76,7 @@ class GameState:
 
     def format_win(self):
         g = self.guesses[self.word]
-        return f':confetti_ball: {g["by"]} got the correct word `{self.word}`'
+        return f'\N{confetti ball} {g["by"]} got the correct word `{self.word}`'
 
     def format_top(self, n):
         lines = [self.format_guess(guess) for guess in self.top()[:n]]
@@ -115,7 +115,9 @@ class GameState:
 
     def format_guess(self, guess):
         def circle(percentile):
-            if percentile > 990:
+            if percentile > 999:
+                return "\N{confetti ball}"
+            elif percentile > 990:
                 return "\N{large red circle}"
             elif percentile > 900:
                 return "\N{large orange circle}"
