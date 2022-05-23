@@ -94,18 +94,20 @@ class GameState:
                 hints = len([g for g in guesses])
             else:
                 sims = [g[1]["similarity"] for g in guesses]
+                oneks = [s for s in sims if s > self.story["rest"]]
                 authors[author] = {
                     "n": len(sims),
+                    "onek": len(oneks),
                     "max": self.scaled_similarity(max(sims)),
-                    "median": self.scaled_similarity(statistics.median(sims))
+                    "median": self.scaled_similarity(statistics.median(sims)),
                 }
 
         lines = [
             f"{len(self.guesses) - hints} guesses, {hints} hints",
             "",
-            f'{"who":6} {"n":>5} {"max":>6} {"median":>6}'
+            f'{"who":6} {"1k":>4} {"n":>4} {"max":>6} {"median":>6}'
         ] + [
-            f'{str(k)[:6]:6} {v["n"]:5} {round(v["max"], 2):6} {round(v["median"], 2):6}'
+            f'{str(k)[:6]:6} {v["onek"]:4} {v["n"]:4} {round(v["max"], 2):6} {round(v["median"], 2):6}'
             for k, v in sorted(authors.items(), key=lambda t: t[1]["max"])
         ]
         text = "\n".join(lines)
