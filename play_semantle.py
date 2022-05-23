@@ -23,6 +23,20 @@ class GameState:
         self.guesses = {}
         self.result = result
 
+    def migrate(self):
+        if not hasattr(self, "result"):
+            logging.info("migrate")
+            self.result = self.guesses[self.word]
+
+            def remove_vec(v):
+                del v["vec"]
+                return v
+
+            self.guesses = dict([(k, remove_vec(v)) for k, v in self.guesses.items() if "by" in v])
+            return True
+        else:
+            return False
+
     def add_guess(self, guess, result):
         wa = self.result["vec"]
         ga = result["vec"]
@@ -155,6 +169,13 @@ class PlaySemantle(discord.Client):
             self.words = json.loads(f.read())
 
         self.games = shelve.open("play_semantle")
+
+        for k in self.games.keys():
+            g = self.games[k]
+            if g.migrate():
+                self.games[k] = g
+        self.games.sync()
+
         self.channel = channel
 
     async def close(self):
