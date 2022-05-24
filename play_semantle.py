@@ -273,10 +273,12 @@ class PlaySemantle(discord.Client):
             self.games[str(message.channel.id)] = game
             self.games.sync()
 
-            await message.channel.send(f"```{game.format_guess(guess)} ```")
-
             if game.is_win(guess):
                 await message.channel.send(game.format_win())
+                await message.channel.send(game.format_top(20))
+                await message.channel.send(game.format_stats())
+            else:
+                await message.channel.send(f"```{game.format_guess(guess)} ```")
 
         except json.decoder.JSONDecodeError:
             await message.channel.send(f"{guess} is invalid")
